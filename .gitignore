@@ -1,0 +1,18 @@
+# IDE
+.idea/
+.project
+.settings/
+*.iml
+target/
+
+# Classes
+*.class
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+# Configs
+aws.config
+sepior.config
