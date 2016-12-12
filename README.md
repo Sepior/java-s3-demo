@@ -65,3 +65,17 @@ Download the data stored in an S3 bucket called `myBucket` under an S3 key calle
 ```
 java -jar target/java-s3-demo-0.0.0-SNAPSHOT-jar-with-dependencies.jar download myBucket mykey test2.txt
 ```
+
+Enabling Strong Encryption
+--------------------------
+
+The Sepior SDK uses strong encryption. If you are using Oracle's JRE you must make sure that the Java Cryptography Extension (JCE) Unlimited Strength Jurisdiction Policy Files are installed in `${java.home}/jre/lib/security/`. If this is not the case you will get the following exception:
+
+```java
+java.security.InvalidKeyException: Illegal key size
+```
+
+The policy files can be downloaded here:
+
+Java 7: http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html
+Java 8: http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html
