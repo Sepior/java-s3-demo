@@ -12,7 +12,3 @@ target/
 *.jar
 *.war
 *.ear
-
-# Configs
-aws.config
-sepior.config
