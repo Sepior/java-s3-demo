@@ -13,13 +13,7 @@ This demo uses maven. To build it simply run:
 Credentials
 -----------
 
-Amazon and Sepior credentials must be provided in the following files in the working directory:
-
-aws.config:
-```bash
-accessKey=AWS_ACCESS_KEY
-secretKey=AWS_SECRET_KEY
-```
+Sepior credentials must be provided in the file `sepior.config`. The demo already contains the credential of a test account to play around with.
 
 sepior.config:
 ```javascript
@@ -35,7 +29,15 @@ sepior.config:
 }
 ```
 
-The Amazon user must have the proper access rights to the S3 buckets you want to use.
+AWS credentials can be provided in a file called `aws.config`. 
+
+aws.config:
+```bash
+accessKey=AWS_ACCESS_KEY
+secretKey=AWS_SECRET_KEY
+```
+
+If this file is not present the demo will use AWS credentials for a bucket called `sepior-demo` which is provided by Sepior.
 
 Usage
 -----
