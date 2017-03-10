@@ -13,7 +13,7 @@ This demo uses maven. To build it simply run:
 Credentials
 -----------
 
-To use the demo you need Amazon and Sepior credentials. The demo is hard-coded to use the following files in the working directory:
+Amazon and Sepior credentials must be provided in the following files in the working directory:
 
 aws.config:
 ```bash

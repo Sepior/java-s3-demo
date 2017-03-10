@@ -1,6 +1,7 @@
 package com.sepior.s3.demo;
 
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.PropertiesFileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GetObjectRequest;
@@ -14,6 +15,7 @@ import com.sepior.sdk.SepiorServicesClientConfiguration;
 import com.sepior.sdk.SepiorUserException;
 import com.sepior.sdk.SepiorUtils;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -21,11 +23,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Base64;
 
 public class S3EncryptionDemo {
 
     private static final String sepiorServicesClientConfigurationFile = "sepior.config";
     private static final String amazonS3ConfigurationFile = "aws.config";
+    private static final String encryptedAwsCredentials = "AQAAAAEAAAAAAAAAJAAAAGQ1ODYzNDg5LTUyMTAtNGZmNy05Y2JhLWYwNDcwZTJlMTlmYgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABTRVBDUllQVAAAAAAAAAAAAAAAAAAAAADJrypAEAwLpnYCtOjSAUYDk0OjYqZ6-3mli1lRDG-zYmSVxTc3XP3ijmTZiDztkTuX63QgURX9UBbUxyrP5VDjsiuha2A";
 
     private static SepiorS3Encryption s3Enc;
 
@@ -33,6 +37,27 @@ public class S3EncryptionDemo {
         if (args.length != 4 || ((!args[0].equals("upload") && !args[0].equals("download")))) {
             System.out.println("Parameters: <upload|download> <s3Bucket> <s3Key> <filename>");
             System.exit(1);
+        }
+    }
+
+    private static AWSCredentials getAwsCredentials(SepiorServicesClient sepiorClient) {
+        File awsConfigFile = new File(amazonS3ConfigurationFile);
+        if (awsConfigFile.exists() && !awsConfigFile.isDirectory()) {
+            return new PropertiesFileCredentialsProvider(amazonS3ConfigurationFile).getCredentials();
+        }
+
+        try {
+            try (InputStream decryptionStream = sepiorClient.getDecryptingInputStream(new ByteArrayInputStream(Base64.getUrlDecoder().decode(encryptedAwsCredentials)))) {
+                byte[] decrypted = new byte[64];
+                int length = decryptionStream.read(decrypted);
+                String[] awsCredentials = new String(decrypted, 0, length).split(":");
+                if (awsCredentials.length != 2) {
+                    throw new RuntimeException("Invalid AWS credentials");
+                }
+                return new BasicAWSCredentials(awsCredentials[0], awsCredentials[1]);
+            }
+        } catch (SepiorServiceException | SepiorUserException | IOException e) {
+            throw new RuntimeException(e.getMessage());
         }
     }
 
@@ -75,7 +100,7 @@ public class S3EncryptionDemo {
         /* Initialise Sepior and AWS clients. */
         SepiorServicesClientConfiguration sepiorConfig = SepiorUtils.getConfigurationFromFile(Paths.get(sepiorServicesClientConfigurationFile));
         SepiorServicesClient sepiorClient = SepiorUtils.getSepiorServicesClient(sepiorConfig);
-        AWSCredentials awsCredentials = new PropertiesFileCredentialsProvider(amazonS3ConfigurationFile).getCredentials();
+        AWSCredentials awsCredentials = getAwsCredentials(sepiorClient);
 
         /* Create Sepior S3 encryption object with the given configuration and get an AWS client. */
         s3Enc = new SepiorS3Encryption(sepiorClient, awsCredentials);
