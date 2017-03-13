@@ -29,7 +29,7 @@ public class S3EncryptionDemo {
 
     private static final String sepiorServicesClientConfigurationFile = "sepior.config";
     private static final String amazonS3ConfigurationFile = "aws.config";
-    private static final String encryptedAwsCredentials = "AQAAAAEAAAAAAAAAJAAAAGQ1ODYzNDg5LTUyMTAtNGZmNy05Y2JhLWYwNDcwZTJlMTlmYgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABTRVBDUllQVAAAAAAAAAAAAAAAAAAAAADJrypAEAwLpnYCtOjSAUYDk0OjYqZ6-3mli1lRDG-zYmSVxTc3XP3ijmTZiDztkTuX63QgURX9UBbUxyrP5VDjsiuha2A";
+    private static final String encryptedAwsCredentials = "AQAAAAEAAAAAAAAAJAAAAGMwYmQ0MzZmLTZhMTMtNGZmNC1hMTk4LTY2ODQ5ZTFhYTc5YwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABTRVBDUllQVAAAAAAAAAAAAAAAAAAAAADPEn0NCRexpsN34dkPUrQ-CVYiT-L4sEssCZVa0gJx30kGm9A5Vcv63cthXMMhAPPUB3Xkh9Bbb9Qdy-0DE9VuDHy3jRI";
 
     private static SepiorS3Encryption s3Enc;
 
