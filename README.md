@@ -42,13 +42,13 @@ If this file is not present the demo will use AWS credentials for a bucket calle
 Usage
 -----
 
-To try the demo simply run the generated jar file:
+Just run the generated jar file:
 
 ```
 java -jar target/java-s3-demo-0.0.0-SNAPSHOT-jar-with-dependencies.jar
 ```
 
-Without any arguments it will print out usage information:
+If you don't specify any arguments it will print out usage information:
 
 ```
 Parameters: <upload|download> <s3Bucket> <s3Key> <filename>
@@ -56,16 +56,16 @@ Parameters: <upload|download> <s3Bucket> <s3Key> <filename>
 
 Examples
 --------
-Upload a file called `test.txt` to an S3 bucket called `myBucket` under an S3 key called `myKey`:
+Upload a file called `testdata.txt` to an S3 bucket called `sepior-demo` under an S3 key called `myKey`:
 
 ```
-java -jar target/java-s3-demo-0.0.0-SNAPSHOT-jar-with-dependencies.jar upload myBucket mykey test.txt
+java -jar target/java-s3-demo-0.0.0-SNAPSHOT-jar-with-dependencies.jar upload sepior-demo mykey testdata.txt
 ```
 
-Download the data stored in an S3 bucket called `myBucket` under an S3 key called `myKey` and place it in a file called `test2.txt`:
+Download the data stored in an S3 bucket called `sepior-demo` under an S3 key called `myKey` and place it in a file called `testdata2.txt`:
 
 ```
-java -jar target/java-s3-demo-0.0.0-SNAPSHOT-jar-with-dependencies.jar download myBucket mykey test2.txt
+java -jar target/java-s3-demo-0.0.0-SNAPSHOT-jar-with-dependencies.jar download sepior-demo mykey testdata2.txt
 ```
 
 Enabling Strong Encryption
