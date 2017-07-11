@@ -1,13 +1,18 @@
 package com.sepior.s3.demo;
 
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.PropertiesFileCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Encryption;
+import com.amazonaws.services.s3.AmazonS3EncryptionClientBuilder;
+import com.amazonaws.services.s3.model.CryptoConfiguration;
+import com.amazonaws.services.s3.model.CryptoMode;
+import com.amazonaws.services.s3.model.EncryptedPutObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.util.IOUtils;
+import com.sepior.s3.SepiorEncryptionMaterialsProvider;
 import com.sepior.s3.SepiorS3Encryption;
 import com.sepior.sdk.SepiorServiceException;
 import com.sepior.sdk.SepiorServicesClient;
@@ -15,23 +20,27 @@ import com.sepior.sdk.SepiorServicesClientConfiguration;
 import com.sepior.sdk.SepiorUserException;
 import com.sepior.sdk.SepiorUtils;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Base64;
 
 public class S3EncryptionDemo {
 
+    private static final boolean useSepiorWrapper = false;
+
     private static final String sepiorServicesClientConfigurationFile = "sepior.config";
     private static final String amazonS3ConfigurationFile = "aws.config";
-    private static final String encryptedAwsCredentials = "AQAAAAEAAAAAAAAAJAAAAGMwYmQ0MzZmLTZhMTMtNGZmNC1hMTk4LTY2ODQ5ZTFhYTc5YwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABTRVBDUllQVAAAAAAAAAAAAAAAAAAAAADPEn0NCRexpsN34dkPUrQ-CVYiT-L4sEssCZVa0gJx30kGm9A5Vcv63cthXMMhAPPUB3Xkh9Bbb9Qdy-0DE9VuDHy3jRI";
+    private static final String encryptedAwsCredentials = "AQAAAAEAAAAAAAAAJAAAADA5M2QyZmI4LTBjMTUtNDdiMC1hZTc1LTBjY2VlZTE2NTNkZgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABTRVBDUllQVAAAAAAAAAAAAAAAAAAAAAC9on3ovwP8lVY_XwaP5vWIUC6bduS_EKw0t5tLZwEE1r2XhnXymHxrv_I-kch2aGdMcayR7kh4NGjcNwH7iKnfmz3ZuNE";
 
-    private static SepiorS3Encryption s3Enc;
+    private static SepiorS3Encryption sepiorS3Encryption;
+    private static SepiorEncryptionMaterialsProvider sepiorEncryptionMaterialsProvider;
+    private static AmazonS3Encryption s3EncryptionClient;
 
     private static void checkUsage(String[] args) {
         if (args.length != 4 || ((!args[0].equals("upload") && !args[0].equals("download")))) {
@@ -40,7 +49,7 @@ public class S3EncryptionDemo {
         }
     }
 
-    private static AWSCredentials getAwsCredentials(SepiorServicesClient sepiorClient) {
+    private static AWSCredentials getAwsCredentials(SepiorServicesClient sepiorClient) throws SepiorServiceException, SepiorUserException {
         File awsConfigFile = new File(amazonS3ConfigurationFile);
         if (awsConfigFile.exists() && !awsConfigFile.isDirectory()) {
             return new PropertiesFileCredentialsProvider(amazonS3ConfigurationFile).getCredentials();
@@ -62,26 +71,36 @@ public class S3EncryptionDemo {
     }
 
     private static void uploadUsingAmazonSDK(String s3Bucket, String s3Key, String filename) throws SepiorServiceException, SepiorUserException {
-        AmazonS3 awsClient = s3Enc.getAmazonS3();
-        PutObjectRequest put = s3Enc.getPutObjectRequest(s3Bucket, s3Key, new File(filename));
-        awsClient.putObject(put);
+        /* Generate EncryptedPutObjectRequest. */
+        EncryptedPutObjectRequest put = new EncryptedPutObjectRequest(s3Bucket, s3Key, new File(filename))
+            .withMaterialsDescription(sepiorEncryptionMaterialsProvider.getMaterialDescription(s3Bucket, s3Key));
+
+        /* Upload object to S3. */
+        s3EncryptionClient.putObject(put);
     }
 
     private static void uploadUsingSepiorSDK(String s3Bucket, String s3Key, String filename) throws SepiorServiceException, SepiorUserException {
-        s3Enc.uploadData(s3Bucket, s3Key, new File(filename));
+        sepiorS3Encryption.uploadData(s3Bucket, s3Key, new File(filename));
     }
 
     private static void downloadUsingAmazonSDK(String s3Bucket, String s3Key, String filename) throws IOException {
-        AmazonS3 awsClient = s3Enc.getAmazonS3();
+        /* Generate GetObjectRequest. */
         GetObjectRequest get = new GetObjectRequest(s3Bucket, s3Key);
-        S3Object s3Object = awsClient.getObject(get);
-        try (InputStream in = s3Object.getObjectContent()) {
-            Files.copy(in, Paths.get(filename));
+
+        /* Get object from S3. */
+        S3Object s3Object = s3EncryptionClient.getObject(get);
+
+        try (InputStream in = s3Object.getObjectContent(); OutputStream out = new BufferedOutputStream(new FileOutputStream(filename))) {
+            int bytesRead;
+            byte[] buffer = new byte[16384];
+            while ((bytesRead = in.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
+            }
         }
     }
 
     private static void downloadUsingSepiorSDK(String s3Bucket, String s3Key, String filename) throws IOException {
-        InputStream in = s3Enc.downloadData(s3Bucket, s3Key);
+        InputStream in = sepiorS3Encryption.downloadData(s3Bucket, s3Key);
         File file = new File(filename);
         try (OutputStream out = new FileOutputStream(file)) {
             IOUtils.copy(in, out);
@@ -102,19 +121,31 @@ public class S3EncryptionDemo {
         SepiorServicesClient sepiorClient = SepiorUtils.getSepiorServicesClient(sepiorConfig);
         AWSCredentials awsCredentials = getAwsCredentials(sepiorClient);
 
-        /* Create Sepior S3 encryption object with the given configuration and get an AWS client. */
-        s3Enc = new SepiorS3Encryption(sepiorClient, awsCredentials);
+        /* Get Amazon S3 client. */
+        sepiorEncryptionMaterialsProvider = new SepiorEncryptionMaterialsProvider(sepiorClient);
+        s3EncryptionClient = AmazonS3EncryptionClientBuilder.standard()
+            .withCredentials(new AWSStaticCredentialsProvider(awsCredentials))
+            .withCryptoConfiguration(new CryptoConfiguration().withCryptoMode(CryptoMode.EncryptionOnly))
+            .withEncryptionMaterials(sepiorEncryptionMaterialsProvider)
+            .build();
+
+        /* Get Sepior S3 client. */
+        sepiorS3Encryption = new SepiorS3Encryption(sepiorClient, awsCredentials);
 
         if (command.equals("upload")) {
             /* Put filename to S3 (s3Bucket, s3Key). */
-
-            //uploadUsingSepiorSDK(s3Bucket, s3Key, filename);
-            uploadUsingAmazonSDK(s3Bucket, s3Key, filename);
+            if (useSepiorWrapper) {
+                uploadUsingSepiorSDK(s3Bucket, s3Key, filename);
+            } else {
+                uploadUsingAmazonSDK(s3Bucket, s3Key, filename);
+            }
         } else {
             /* Get (s3Bucket, s3Key) from S3 to filename. */
-
-            //downloadUsingSepiorSDK(s3Bucket, s3Key, filename);
-            downloadUsingAmazonSDK(s3Bucket, s3Key, filename);
+            if (useSepiorWrapper) {
+                downloadUsingSepiorSDK(s3Bucket, s3Key, filename);
+            } else {
+                downloadUsingAmazonSDK(s3Bucket, s3Key, filename);
+            }
         }
     }
 }
