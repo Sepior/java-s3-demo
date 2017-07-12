@@ -122,7 +122,7 @@ public class S3EncryptionDemo {
         AWSCredentials awsCredentials = getAwsCredentials(sepiorClient);
 
         /* Get Amazon S3 client. */
-        sepiorEncryptionMaterialsProvider = new SepiorEncryptionMaterialsProvider(sepiorClient);
+        sepiorEncryptionMaterialsProvider = new SepiorEncryptionMaterialsProvider(sepiorClient, awsCredentials);
         s3EncryptionClient = AmazonS3EncryptionClientBuilder.standard()
             .withCredentials(new AWSStaticCredentialsProvider(awsCredentials))
             .withCryptoConfiguration(new CryptoConfiguration().withCryptoMode(CryptoMode.EncryptionOnly))

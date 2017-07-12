@@ -24,7 +24,7 @@
         <dependency>
             <groupId>com.sepior.s3</groupId>
             <artifactId>java-s3</artifactId>
-            <version>0.3.1</version>
+            <version>0.3.2</version>
         </dependency>
 
         <dependency>
