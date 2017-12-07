@@ -111,21 +111,24 @@ public class S3EncryptionDemo {
         String s3Key = args[2];
         String filename = args[3];
 
+        String awsRegion = "eu-west-1";
+
         /* Initialise Sepior and AWS clients. */
         SepiorServicesClientConfiguration sepiorConfig = SepiorUtils.getConfigurationFromFile(Paths.get(sepiorServicesClientConfigurationFile));
         SepiorServicesClient sepiorClient = SepiorUtils.getSepiorServicesClient(sepiorConfig);
         AWSCredentials awsCredentials = getAwsCredentials(sepiorClient);
 
         /* Get Amazon S3 client. */
-        sepiorEncryptionMaterialsProvider = new SepiorEncryptionMaterialsProvider(sepiorClient, awsCredentials);
+        sepiorEncryptionMaterialsProvider = new SepiorEncryptionMaterialsProvider(sepiorClient, awsCredentials, awsRegion);
         s3EncryptionClient = AmazonS3EncryptionClientBuilder.standard()
                 .withCredentials(new AWSStaticCredentialsProvider(awsCredentials))
                 .withCryptoConfiguration(new CryptoConfiguration().withCryptoMode(CryptoMode.EncryptionOnly))
                 .withEncryptionMaterials(sepiorEncryptionMaterialsProvider)
+                .withRegion(awsRegion)
                 .build();
 
         /* Get Sepior S3 client. */
-        sepiorS3Encryption = new SepiorS3Encryption(sepiorClient, awsCredentials);
+        sepiorS3Encryption = new SepiorS3Encryption(sepiorClient, awsCredentials, awsRegion);
 
         if (command.equals("upload")) {
             /* Put filename to S3 (s3Bucket, s3Key). */
